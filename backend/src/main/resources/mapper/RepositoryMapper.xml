@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.githubcrawler.repository.RepositoryMapper">
+
+    <!-- ================================================================
+         Result Map — explicit TypeHandler for TEXT[] and JSONB columns
+         ================================================================ -->
+    <resultMap id="repositoryResultMap" type="com.githubcrawler.model.Repository">
+        <id     property="id"          column="id"/>
+        <result property="fullName"    column="full_name"/>
+        <result property="name"        column="name"/>
+        <result property="description" column="description"/>
+        <result property="language"    column="language"/>
+        <result property="stars"       column="stars"/>
+        <result property="forks"       column="forks"/>
+        <result property="openIssues"  column="open_issues"/>
+        <result property="htmlUrl"     column="html_url"/>
+        <result property="topics"      column="topics"
+                typeHandler="com.githubcrawler.util.StringArrayTypeHandler"/>
+        <result property="updatedAt"   column="updated_at"/>
+        <result property="crawledAt"   column="crawled_at"/>
+        <result property="rawData"     column="raw_data"
+                typeHandler="com.githubcrawler.util.JsonbTypeHandler"/>
+    </resultMap>
+
+    <!-- ================================================================
+         INSERT (upsert) — ON CONFLICT (full_name) DO UPDATE
+         ================================================================ -->
+    <insert id="insert" parameterType="com.githubcrawler.model.Repository">
+        INSERT INTO repositories (
+            full_name, name, description, language,
+            stars, forks, open_issues, html_url,
+            topics, updated_at, crawled_at, raw_data
+        ) VALUES (
+            #{fullName},
+            #{name},
+            #{description},
+            #{language},
+            #{stars},
+            #{forks},
+            #{openIssues},
+            #{htmlUrl},
+            #{topics,   typeHandler=com.githubcrawler.githubcrawler.util.StringArrayTypeHandler},
+            #{updatedAt},
+            NOW(),
+            #{rawData,  typeHandler=com.githubcrawler.githubcrawler.util.JsonbTypeHandler}
+        )
+        ON CONFLICT (full_name) DO UPDATE SET
+            name        = EXCLUDED.name,
+            description = EXCLUDED.description,
+            language    = EXCLUDED.language,
+            stars       = EXCLUDED.stars,
+            forks       = EXCLUDED.forks,
+            open_issues = EXCLUDED.open_issues,
+            html_url    = EXCLUDED.html_url,
+            topics      = EXCLUDED.topics,
+            updated_at  = EXCLUDED.updated_at,
+            crawled_at  = NOW(),
+            raw_data    = EXCLUDED.raw_data
+    </insert>
+
+    <!-- ================================================================
+         findAll — dynamic filters, safe sort injection, pagination
+         ================================================================ -->
+    <select id="findAll" resultMap="repositoryResultMap">
+        SELECT id, full_name, name, description, language,
+               stars, forks, open_issues, html_url,
+               topics, updated_at, crawled_at, raw_data
+        FROM repositories
+        <where>
+            <if test="language != null and language != ''">
+                AND language = #{language}
+            </if>
+            <if test="minStars != null">
+                AND stars >= #{minStars}
+            </if>
+        </where>
+        <choose>
+            <when test="sort != null and sort == 'updated_at'">
+                ORDER BY updated_at DESC NULLS LAST
+            </when>
+            <otherwise>
+                ORDER BY stars DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- ================================================================
+         countAll — same filters as findAll, no sort/pagination
+         ================================================================ -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM repositories
+        <where>
+            <if test="language != null and language != ''">
+                AND language = #{language}
+            </if>
+            <if test="minStars != null">
+                AND stars >= #{minStars}
+            </if>
+        </where>
+    </select>
+
+</mapper>

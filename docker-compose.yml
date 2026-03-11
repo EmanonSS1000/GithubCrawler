@@ -1,0 +1,58 @@
+services:
+  # PostgreSQL：主資料庫，儲存爬蟲結果與系統資料
+  postgres:
+    image: postgres:15
+    container_name: github-crawler-db
+    environment:
+      # 初始化資料庫名稱
+      POSTGRES_DB: github_crawler
+      # 初始化資料庫帳號
+      POSTGRES_USER: crawler
+      # 初始化資料庫密碼（正式環境建議改用 secret 管理）
+      POSTGRES_PASSWORD: secret
+    ports:
+      # 主機 5432 -> 容器 5432，方便本機連線
+      - "5432:5432"
+    volumes:
+      # 持久化 DB 資料，避免重啟容器後資料遺失
+      - postgres_data:/var/lib/postgresql/data
+      # 首次啟動時執行初始化 SQL
+      - ./backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - crawler-net
+    healthcheck:
+      # 檢查 PostgreSQL 是否可用
+      test: ["CMD-SHELL", "pg_isready -U crawler -d github_crawler"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis：快取/佇列用途（視後端實作而定）
+  redis:
+    image: redis:7
+    container_name: github-crawler-redis
+    ports:
+      # 主機 6379 -> 容器 6379
+      - "6379:6379"
+    volumes:
+      # 持久化 Redis 資料
+      - redis_data:/data
+    networks:
+      - crawler-net
+    healthcheck:
+      # 用 ping 確認 Redis 存活
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  # PostgreSQL 命名 volume
+  postgres_data:
+  # Redis 命名 volume
+  redis_data:
+
+networks:
+  # 讓服務在同一個 bridge network 內互通
+  crawler-net:
+    driver: bridge

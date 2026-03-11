@@ -1,0 +1,65 @@
+HELP.md
+
+### Build ###
+target/
+build/
+out/
+
+.mvn/wrapper/maven-wrapper.jar
+
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### Logs ###
+*.log
+logs/
+
+### Env ###
+.env
+.env.local
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### IntelliJ IDEA ###
+
+.idea/
+*.iws
+*.iml
+*.ipr
+
+
+### VS Code ###
+.vscode/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### Node (如果未來有 frontend) ###
+node_modules/
+dist/
+
+### Docker ###
+*.pid
+/backend/HELP.md
+/backend/.idea/
+/CLAUDE.md
+/plan.md
+
+
